@@ -1,4 +1,4 @@
-use std::{fs, io};
+use std::fs;
 
 fn main() {
     // let mut entries = fs::read_dir(".").expect("Failed to read directory")
@@ -17,7 +17,7 @@ fn main() {
             other => panic!("Unexpected char: {}", other)
         }
         // index of first character to cause count to be -1
-        if (floor == -1 && negative_index == 0) {
+        if floor == -1 && negative_index == 0 {
             negative_index = i + 1;
         }
     }
