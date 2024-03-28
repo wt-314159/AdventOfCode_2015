@@ -1,5 +1,6 @@
 use std::fs;
 
+#[allow(dead_code)]
 const VOWELS: &str = "aeiou";
 
 fn main() {
@@ -20,6 +21,7 @@ fn main() {
 // This method would be easier and probably quicker with regex,
 // just didn't want to spend the time to think about how to do it
 // with Regex
+#[allow(dead_code)]
 fn is_nice(str: &str) -> bool {
     let mut prev_char = '\0';
     let mut vowel_count = 0;
