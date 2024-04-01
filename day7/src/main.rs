@@ -21,8 +21,10 @@ fn main() {
                     Rc::new(RefCell::new(Element::Input(val)))
                 }
                 else {
-                    let source_wire = wires.entry(params[0]).or_insert(Rc::new(RefCell::new(Element::Wire(params[0], None))));
-                    *source_wire
+                    let wire_struct = WireStruct::mut_ref_new(params[0]);
+                    let default_wire_element = Rc::new(RefCell::new(Element::Wire(wire_struct)));
+                    let source_wire = wires.entry(params[0]).or_insert(default_wire_element);
+                    Rc::clone(&source_wire)
                 }
             }
 
@@ -30,24 +32,20 @@ fn main() {
         };
 
         if !wires.contains_key(drain_string) {
-            wires.insert(drain_string, Rc::new(RefCell::new(Element::Wire(drain_string, None))));
+            let default_wire_element = Rc::new(RefCell::new(Element::Wire(WireStruct::mut_ref_new(drain_string))));
+            wires.insert(drain_string, default_wire_element);
         }
         let mut drain = wires.get_mut(drain_string).expect("Failed to get wire.");
         
-        let drainElement = *(*(*drain)).borrow_mut();
-        match drainElement {
-            Element::Wire(_, None) => drainElement
-        }
-        let test = *drain;
-        let test2 = *test;
-        let test3 = *test2.borrow_mut();
-        test3.source = source;
+        let cloned = drain.clone();
+        let drainElement = (*cloned).borrow_mut();
+        drainElement.set_source(source);
     }
 }
 
 pub enum Element<'a> {
     Input(u16),
-    Wire(&'a str, Option<Rc<RefCell<Element<'a>>>>),
+    Wire(Rc<RefCell<WireStruct<'a>>>),
     NotGate(Rc<RefCell<Element<'a>>>),
     LShiftGate(Rc<RefCell<Element<'a>>>),
     RShiftGate(Rc<RefCell<Element<'a>>>),
@@ -59,13 +57,43 @@ impl<'a> Element<'a> {
     pub fn provide_value(&self) -> u16 {
         match self {
             Self::Input(value) => *value,
-            Self::Wire(_, source) => source.provide_value(),
-            Self::NotGate(source) => !source.provide_value(),
-            Self::LShiftGate(source) => source.provide_value() << 2,
-            Self::RShiftGate(source) => source.provide_value() >> 2,
-            Self::AndGate(source1, source2) => source1.provide_value() & source2.provide_value(),
-            Self::OrGate(source1, source2) => source1.provide_value() | source2.provide_value()
+            Self::Wire(wire) => match &(*(*wire)).borrow().source {
+                Some(source) => (*source.borrow()).provide_value(),
+                None => panic!("Wire doesn't have a source!")
+            }
+            Self::NotGate(source) => !(*source.borrow()).provide_value(),
+            Self::LShiftGate(source) => (*source.borrow()).provide_value() << 2,
+            Self::RShiftGate(source) => (*source.borrow()).provide_value() >> 2,
+            Self::AndGate(source1, source2) => (*source1.borrow()).provide_value() & (*source2.borrow()).provide_value(),
+            Self::OrGate(source1, source2) => (*source1.borrow()).provide_value() | (*source2.borrow()).provide_value(),
         }
+    }
+
+    // pub fn to_mut_ref(&'a self) -> Rc<RefCell<Element<'a>>> {
+    //     Rc::new(RefCell::new(*self))
+    // }
+
+    pub fn set_source(&self, source: Rc<RefCell<Element<'a>>>) {
+        if let Self::Wire(wire) = self {
+            if let Some(test) = (*(*wire).clone()).borrow().source {
+                panic!("Wire source already set!")
+            }
+            (**wire).borrow_mut().source = Some(source);
+        }
+        else {
+            panic!("Trying to set source on element other than wire!")
+        }
+    } 
+}
+
+pub struct WireStruct<'a> {
+    id: &'a str,
+    source: Option<Rc<RefCell<Element<'a>>>>
+}
+
+impl<'a> WireStruct<'a> {
+    fn mut_ref_new(id: &str) -> Rc<RefCell<WireStruct>> {
+        Rc::new(RefCell::new(WireStruct { id: id, source: None }))
     }
 }
 
