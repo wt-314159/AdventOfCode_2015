@@ -69,10 +69,6 @@ impl<'a> Element<'a> {
         }
     }
 
-    // pub fn to_mut_ref(&'a self) -> Rc<RefCell<Element<'a>>> {
-    //     Rc::new(RefCell::new(*self))
-    // }
-
     pub fn set_source(&self, source: Rc<RefCell<Element<'a>>>) {
         if let Self::Wire(wire) = self {
             if let Some(test) = (*(*wire).clone()).borrow().source {
