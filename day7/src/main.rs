@@ -71,6 +71,7 @@ impl<'a> Element<'a> {
 
     pub fn set_source(&self, source: Rc<RefCell<Element<'a>>>) {
         if let Self::Wire(wire) = self {
+            // There must be a better way!
             if let Some(test) = (*(*wire).clone()).borrow().source {
                 panic!("Wire source already set!")
             }
