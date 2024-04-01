@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc, cell::RefCell, fs};
+use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, fs, rc::Rc};
 use regex::Regex;
 
 fn main() {
@@ -6,23 +6,23 @@ fn main() {
     println!("{:?}", input);
     println!("Input length: {}", input.len());
 
-    
-    let mut wires: HashMap<&str, Rc<Wire>> = HashMap::new();
+    let mut wires: HashMap<&str, Rc<RefCell<Element>>> = HashMap::new();
     let digits_regex = Regex::new("[0-9]+").unwrap();
     for line in input.split("\n") {
         let params: Vec<&str> = line.split_whitespace().collect();
         let inputs_len = params.len();
         let drain_string = params.last().expect("No last string.");
-
-        let source: Rc<dyn Element> = match params.len() {
+        
+        
+        let source: Rc<RefCell<Element>> = match params.len() {
             3 => {
                 if digits_regex.captures_len() > 0 {
                     let val: u16 = params[0].parse::<u16>().expect(&format!("Failed to parse {} into u16", params[0]));
-                    Rc::new(Input {value: val})
+                    Rc::new(RefCell::new(Element::Input(val)))
                 }
                 else {
-                    let source_wire = wires.entry(params[0]).or_insert(Rc::new(Wire {id: params[0], source: None }));
-                    source_wire
+                    let source_wire = wires.entry(params[0]).or_insert(Rc::new(RefCell::new(Element::Wire(params[0], None))));
+                    *source_wire
                 }
             }
 
@@ -30,28 +30,36 @@ fn main() {
         };
 
         if !wires.contains_key(drain_string) {
-            wires.insert(drain_string, Rc::new(Wire {id: drain_string, source: None }));
+            wires.insert(drain_string, Rc::new(RefCell::new(Element::Wire(drain_string, None))));
         }
         let mut drain = wires.get_mut(drain_string).expect("Failed to get wire.");
-        drain.source = Some(source);
+        
+        let drainElement = *(*(*drain)).borrow_mut();
+        match drainElement {
+            Element::Wire(_, None) => drainElement
+        }
+        let test = *drain;
+        let test2 = *test;
+        let test3 = *test2.borrow_mut();
+        test3.source = source;
     }
 }
 
-pub enum Element {
+pub enum Element<'a> {
     Input(u16),
-    Wire(Box<Element>),
-    NotGate(Box<Element>),
-    LShiftGate(Box<Element>),
-    RShiftGate(Box<Element>),
-    AndGate(Box<Element>, Box<Element>),
-    OrGate(Box<Element>, Box<Element>),
+    Wire(&'a str, Option<Rc<RefCell<Element<'a>>>>),
+    NotGate(Rc<RefCell<Element<'a>>>),
+    LShiftGate(Rc<RefCell<Element<'a>>>),
+    RShiftGate(Rc<RefCell<Element<'a>>>),
+    AndGate(Rc<RefCell<Element<'a>>>, Rc<RefCell<Element<'a>>>),
+    OrGate(Rc<RefCell<Element<'a>>>, Rc<RefCell<Element<'a>>>),
 }
 
-impl Element {
+impl<'a> Element<'a> {
     pub fn provide_value(&self) -> u16 {
         match self {
             Self::Input(value) => *value,
-            Self::Wire(source) => source.provide_value(),
+            Self::Wire(_, source) => source.provide_value(),
             Self::NotGate(source) => !source.provide_value(),
             Self::LShiftGate(source) => source.provide_value() << 2,
             Self::RShiftGate(source) => source.provide_value() >> 2,
