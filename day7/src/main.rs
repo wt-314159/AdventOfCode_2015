@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, fs, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fs, rc::Rc};
 use regex::Regex;
 
 fn main() {
@@ -14,7 +14,7 @@ fn main() {
         let drain_string = params.last().expect("No last string.");
         
         
-        let source: Rc<RefCell<Element>> = match params.len() {
+        let source: Rc<RefCell<Element>> = match inputs_len {
             3 => {
                 if digits_regex.captures_len() > 0 {
                     let val: u16 = params[0].parse::<u16>().expect(&format!("Failed to parse {} into u16", params[0]));
@@ -35,11 +35,11 @@ fn main() {
             let default_wire_element = Rc::new(RefCell::new(Element::Wire(WireStruct::mut_ref_new(drain_string))));
             wires.insert(drain_string, default_wire_element);
         }
-        let mut drain = wires.get_mut(drain_string).expect("Failed to get wire.");
-        
+
+        let drain = wires.get(drain_string).expect("Failed to get drain");        
         let cloned = drain.clone();
-        let drainElement = (*cloned).borrow_mut();
-        drainElement.set_source(source);
+        let drain_element = (*cloned).borrow_mut();
+        drain_element.set_source(source);
     }
 }
 
@@ -71,8 +71,7 @@ impl<'a> Element<'a> {
 
     pub fn set_source(&self, source: Rc<RefCell<Element<'a>>>) {
         if let Self::Wire(wire) = self {
-            // There must be a better way!
-            if let Some(test) = (*(*wire).clone()).borrow().source {
+            if let Some(_) = &wire.borrow().source {
                 panic!("Wire source already set!")
             }
             (**wire).borrow_mut().source = Some(source);
