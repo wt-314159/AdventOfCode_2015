@@ -16,23 +16,33 @@ fn main() {
         
         let source: Rc<RefCell<Element>> = match inputs_len {
             3 => {
-                if digits_regex.captures_len() > 0 {
-                    let val: u16 = params[0].parse::<u16>().expect(&format!("Failed to parse {} into u16", params[0]));
-                    Rc::new(RefCell::new(Element::Input(val)))
-                }
-                else {
-                    let wire_struct = WireStruct::mut_ref_new(params[0]);
-                    let default_wire_element = Rc::new(RefCell::new(Element::Wire(wire_struct)));
-                    let source_wire = wires.entry(params[0]).or_insert(default_wire_element);
-                    Rc::clone(&source_wire)
+                parse_to_input_or_wire(&digits_regex, &mut wires, params[0])
+            }
+            4 => { 
+                // must be a not gate
+                let gate_source = parse_to_input_or_wire(&digits_regex, &mut wires, params[1]);
+                Element::NotGate(gate_source).get_boxed_ref()
+            }
+            5 => {
+                let gate_source1 = parse_to_input_or_wire(&digits_regex, &mut wires, params[0]);
+                let gate_source2 = parse_to_input_or_wire(&digits_regex, &mut wires, params[2]);
+                let param2_int = params[2].parse::<u16>();
+
+                // could be AND, OR, LSHIFT, or RSHIFT gates
+                match params[1] {
+                    "AND" => Element::AndGate(gate_source1, gate_source2).get_boxed_ref(),
+                    "OR" => Element::OrGate(gate_source1, gate_source2).get_boxed_ref(),
+                    "LSHIFT" => Element::LShiftGate(gate_source1, param2_int.expect(&format!("Failed to parse {} to u16", params[2]))).get_boxed_ref(),
+                    "RSHIFT" => Element::RShiftGate(gate_source1, param2_int.expect(&format!("Failed to parse {} to u16", params[2]))).get_boxed_ref(),
+                    other => panic!("Unexpected gate name! {}", other)
                 }
             }
 
-            _ => panic!("Unexpected line length")
+            len => panic!("Unexpected line length! Length: {}", len)
         };
 
         if !wires.contains_key(drain_string) {
-            let default_wire_element = Rc::new(RefCell::new(Element::Wire(WireStruct::mut_ref_new(drain_string))));
+            let default_wire_element = WireStruct::default_wire_element(drain_string);
             wires.insert(drain_string, default_wire_element);
         }
 
@@ -43,12 +53,32 @@ fn main() {
     }
 }
 
+fn parse_to_input_or_wire<'a>(
+    digits_regex: &Regex,
+    wires: &mut HashMap<&'a str, Rc<RefCell<Element<'a>>>>, 
+    param: &'a str) -> Rc<RefCell<Element<'a>>> {
+        if digits_regex.is_match(param) {
+            let val: u16 = param.parse::<u16>().expect(&format!("Failed to parse {} into u16", param));
+            Rc::new(RefCell::new(Element::Input(val)))
+        }
+        else {
+            let source_wire = get_wire_or_default(&mut wires, param);
+            Rc::clone(&source_wire)
+        }
+}
+
+fn get_wire_or_default<'a>(wires: &mut HashMap<&'a str, Rc<RefCell<Element<'a>>>>, id: &'a str) -> Rc<RefCell<Element<'a>>> {
+    let default_wire_element = WireStruct::default_wire_element(id);
+    let entry = wires.entry(id).or_insert(default_wire_element);
+    Rc::clone(&entry)
+}
+
 pub enum Element<'a> {
     Input(u16),
     Wire(Rc<RefCell<WireStruct<'a>>>),
     NotGate(Rc<RefCell<Element<'a>>>),
-    LShiftGate(Rc<RefCell<Element<'a>>>),
-    RShiftGate(Rc<RefCell<Element<'a>>>),
+    LShiftGate(Rc<RefCell<Element<'a>>>, u16),
+    RShiftGate(Rc<RefCell<Element<'a>>>, u16),
     AndGate(Rc<RefCell<Element<'a>>>, Rc<RefCell<Element<'a>>>),
     OrGate(Rc<RefCell<Element<'a>>>, Rc<RefCell<Element<'a>>>),
 }
@@ -62,8 +92,8 @@ impl<'a> Element<'a> {
                 None => panic!("Wire doesn't have a source!")
             }
             Self::NotGate(source) => !(*source.borrow()).provide_value(),
-            Self::LShiftGate(source) => (*source.borrow()).provide_value() << 2,
-            Self::RShiftGate(source) => (*source.borrow()).provide_value() >> 2,
+            Self::LShiftGate(source, val) => (*source.borrow()).provide_value() << val,
+            Self::RShiftGate(source, val) => (*source.borrow()).provide_value() >> val,
             Self::AndGate(source1, source2) => (*source1.borrow()).provide_value() & (*source2.borrow()).provide_value(),
             Self::OrGate(source1, source2) => (*source1.borrow()).provide_value() | (*source2.borrow()).provide_value(),
         }
@@ -79,16 +109,22 @@ impl<'a> Element<'a> {
         else {
             panic!("Trying to set source on element other than wire!")
         }
-    } 
+    }
+
+    pub fn get_boxed_ref(self) -> Rc<RefCell<Element<'a>>> {
+        Rc::new(RefCell::new(self))
+    }
 }
 
 pub struct WireStruct<'a> {
-    id: &'a str,
+    #[allow(dead_code)]
+    id: &'a str,        // Could be useful for debugging or later on
     source: Option<Rc<RefCell<Element<'a>>>>
 }
 
 impl<'a> WireStruct<'a> {
-    fn mut_ref_new(id: &str) -> Rc<RefCell<WireStruct>> {
-        Rc::new(RefCell::new(WireStruct { id: id, source: None }))
+    fn default_wire_element(id: &str) -> Rc<RefCell<Element>> {
+        let element = Element::Wire(Rc::new(RefCell::new(WireStruct { id: id, source: None })));
+        Rc::new(RefCell::new(element))
     }
 }
