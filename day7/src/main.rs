@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, fs, rc::Rc};
 use regex::Regex;
 
 fn main() {
-    let input = fs::read_to_string("./src/puzzle_input.txt").expect("Failed to read input");
+    let input = fs::read_to_string("./src/test_puzzle_input.txt").expect("Failed to read input");
     println!("{:?}", input);
     println!("Input length: {}", input.len());
 
@@ -51,6 +51,34 @@ fn main() {
         let drain_element = (*cloned).borrow_mut();
         drain_element.set_source(source);
     }
+
+    println!("Processing complete!");
+
+    let d = wires.get("d").expect("Failed to get wire 'd'").borrow().provide_value();
+    println!("Value of d: {}", d);
+    let e = wires.get("e").expect("Failed to get wire 'e'").borrow().provide_value();
+    println!("Value of e: {}", e);
+    let f = wires.get("f").expect("Failed to get wire 'f'").borrow().provide_value();
+    println!("Value of f: {}", f);
+    let g = wires.get("g").expect("Failed to get wire 'g'").borrow().provide_value();
+    println!("Value of g: {}", g);
+    let h = wires.get("h").expect("Failed to get wire 'h'").borrow().provide_value();
+    println!("Value of h: {}", h);
+    let i = wires.get("i").expect("Failed to get wire 'i'").borrow().provide_value();
+    println!("Value of i: {}", i);
+    let x = wires.get("x").expect("Failed to get wire 'x'").borrow().provide_value();
+    println!("Value of x: {}", x);
+    let y = wires.get("y").expect("Failed to get wire 'y'").borrow().provide_value();
+    println!("Value of y: {}", y);
+
+    // d: 72
+    // e: 507
+    // f: 492
+    // g: 114
+    // h: 65412
+    // i: 65079
+    // x: 123
+    // y: 456
 }
 
 fn parse_to_input_or_wire<'a>(
@@ -62,7 +90,7 @@ fn parse_to_input_or_wire<'a>(
             Rc::new(RefCell::new(Element::Input(val)))
         }
         else {
-            let source_wire = get_wire_or_default(&mut wires, param);
+            let source_wire = get_wire_or_default(wires, param);
             Rc::clone(&source_wire)
         }
 }
