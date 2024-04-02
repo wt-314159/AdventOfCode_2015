@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, fs, rc::Rc};
 use regex::Regex;
 
 fn main() {
-    let input = fs::read_to_string("./src/test_puzzle_input.txt").expect("Failed to read input");
+    let input = fs::read_to_string("./src/puzzle_input.txt").expect("Failed to read input");
     println!("{:?}", input);
     println!("Input length: {}", input.len());
 
@@ -54,31 +54,10 @@ fn main() {
 
     println!("Processing complete!");
 
-    let d = wires.get("d").expect("Failed to get wire 'd'").borrow().provide_value();
-    println!("Value of d: {}", d);
-    let e = wires.get("e").expect("Failed to get wire 'e'").borrow().provide_value();
-    println!("Value of e: {}", e);
-    let f = wires.get("f").expect("Failed to get wire 'f'").borrow().provide_value();
-    println!("Value of f: {}", f);
-    let g = wires.get("g").expect("Failed to get wire 'g'").borrow().provide_value();
-    println!("Value of g: {}", g);
-    let h = wires.get("h").expect("Failed to get wire 'h'").borrow().provide_value();
-    println!("Value of h: {}", h);
-    let i = wires.get("i").expect("Failed to get wire 'i'").borrow().provide_value();
-    println!("Value of i: {}", i);
-    let x = wires.get("x").expect("Failed to get wire 'x'").borrow().provide_value();
-    println!("Value of x: {}", x);
-    let y = wires.get("y").expect("Failed to get wire 'y'").borrow().provide_value();
-    println!("Value of y: {}", y);
-
-    // d: 72
-    // e: 507
-    // f: 492
-    // g: 114
-    // h: 65412
-    // i: 65079
-    // x: 123
-    // y: 456
+    println!("Computing");
+    let mut wire_values: HashMap<&str, u16> = HashMap::new();
+    let result = wires.get("a").expect("Failed to get wire 'a'").borrow().provide_value(&mut wire_values);
+    println!("Value of a: {}", result);
 }
 
 fn parse_to_input_or_wire<'a>(
@@ -112,18 +91,29 @@ pub enum Element<'a> {
 }
 
 impl<'a> Element<'a> {
-    pub fn provide_value(&self) -> u16 {
+    pub fn provide_value(&self, wire_values: &mut HashMap<&'a str, u16>) -> u16 {
+        //print!(".");
         match self {
             Self::Input(value) => *value,
-            Self::Wire(wire) => match &(*(*wire)).borrow().source {
-                Some(source) => (*source.borrow()).provide_value(),
-                None => panic!("Wire doesn't have a source!")
+            Self::Wire(wire) => match &wire.borrow().source {
+                Some(source) => { 
+                    let wire_id = &wire.borrow().id;
+                    if wire_values.contains_key(wire_id) {
+                        wire_values[wire_id]
+                    }
+                    else {
+                        let val = source.borrow().provide_value(wire_values);
+                        wire_values.insert(wire_id, val);
+                        val
+                    }
+                }
+                None => panic!("Wire {} doesn't have a source!", wire.borrow().id)
             }
-            Self::NotGate(source) => !(*source.borrow()).provide_value(),
-            Self::LShiftGate(source, val) => (*source.borrow()).provide_value() << val,
-            Self::RShiftGate(source, val) => (*source.borrow()).provide_value() >> val,
-            Self::AndGate(source1, source2) => (*source1.borrow()).provide_value() & (*source2.borrow()).provide_value(),
-            Self::OrGate(source1, source2) => (*source1.borrow()).provide_value() | (*source2.borrow()).provide_value(),
+            Self::NotGate(source) => !(source.borrow()).provide_value(wire_values),
+            Self::LShiftGate(source, val) => (source.borrow()).provide_value(wire_values) << val,
+            Self::RShiftGate(source, val) => (source.borrow()).provide_value(wire_values) >> val,
+            Self::AndGate(source1, source2) => (source1.borrow()).provide_value(wire_values) & (source2.borrow()).provide_value(wire_values),
+            Self::OrGate(source1, source2) => (source1.borrow()).provide_value(wire_values) | (source2.borrow()).provide_value(wire_values),
         }
     }
 
