@@ -19,7 +19,7 @@ fn main() {
                 // Part 2: Override value of 'b' wire to previous value of 'a' wire
                 // (Replace below if/else statement with code from else statement for
                 //  Part 1 answer.)
-                if (drain_string == &"b") {
+                if drain_string == &"b" {
                     parse_to_input_or_wire(&digits_regex, &mut wires, "3176")
                 }
                 else {
