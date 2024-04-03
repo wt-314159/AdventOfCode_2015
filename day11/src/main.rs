@@ -16,7 +16,7 @@ fn main() {
         if checker.is_valid(&password) {
             break;
         }
-        if (counter > 1000000) {
+        if counter > 1000000 {
             break;
         }
     }
