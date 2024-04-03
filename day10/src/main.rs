@@ -3,6 +3,7 @@ fn main() {
     println!("Initial input: {}", input);
 
     // for part 1, iterate 40 times, not 50
+    #[allow(unused_variables)]
     for i in 0..50 {
         input = look_and_say(&input);
         //println!("Result after {} iterations: {}", i + 1, input);
