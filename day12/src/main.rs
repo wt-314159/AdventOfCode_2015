@@ -4,7 +4,6 @@ use fancy_regex::Regex;
 fn main() {
     let input = fs::read_to_string("./src/puzzle_input.txt").expect("Failed to read input");
     //println!("{:?}", input);
-    //let input = "{\"f\":5,\"d\":{\"d\":\"red\",\"e\":[1,2,3,4],\"f\":5},\"e\":{\"e\":[1,2,3,4],\"f\":5},\"h\":21}";
     println!("Input length: {}", input.len());
 
     // Part 1
