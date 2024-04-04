@@ -43,13 +43,13 @@ fn sum_all_non_red_numbers(input: &str) -> i32 {
 }
 
 fn parse_object(input: &str, brackets: &Vec<(usize, char)>, start_index: usize) -> (i32, usize) {
+    // It's a mess, but it works, should have thought it through more before starting to code!
     // find all relevant bits of string for current object
     let mut strings: Vec<&str> = Vec::new();
     let mut non_array_strings: Vec<&str> = Vec::new();
     let mut obj_depth = 0;
     let mut arr_depth = 0;
     let mut prev_array_close = start_index;
-    let mut prev_array_open = start_index;
     let mut prev_bracket_close = start_index;
     let mut end_index = start_index;
     let bracket_vec_index = brackets.iter().position(|x| x.0 == start_index).unwrap();
@@ -59,8 +59,7 @@ fn parse_object(input: &str, brackets: &Vec<(usize, char)>, start_index: usize) 
             if obj_depth == 0 {
                 strings.push(&input[prev_bracket_close..bracket.0]);
                 // add string since previous array close to non-array-strings,
-                // only if we aren't currently in an array (array open greater 
-                // than array close)
+                // only if we aren't currently in an array (array depth == 0)
                 if arr_depth == 0 { 
                     let most_recent_bracket = max(prev_array_close, prev_bracket_close);
                     non_array_strings.push(&input[most_recent_bracket..bracket.0]);
@@ -70,7 +69,9 @@ fn parse_object(input: &str, brackets: &Vec<(usize, char)>, start_index: usize) 
         }
         else if bracket.1 == '}' {
             if obj_depth == 0 {
+                // end of current object, push string since last object to strings
                 strings.push(&input[prev_bracket_close..bracket.0]);
+                // can't be in an array, push string since last object or array to non-array-strings
                 let most_recent_bracket = max(prev_array_close, prev_bracket_close);
                 non_array_strings.push(&input[most_recent_bracket..bracket.0]);
                 // end of current object
@@ -82,10 +83,10 @@ fn parse_object(input: &str, brackets: &Vec<(usize, char)>, start_index: usize) 
         }
         else if bracket.1 == '[' {
             if obj_depth == 0 && arr_depth == 0 {
+                // entering an array, not currently in one, push non-array-strings
                 let most_recent_bracket = max(prev_array_close, prev_bracket_close);
                 non_array_strings.push(&input[most_recent_bracket..bracket.0]);
             }
-            prev_array_open = bracket.0;
             arr_depth += 1;
         }
         else if bracket.1 == ']' {
@@ -94,20 +95,12 @@ fn parse_object(input: &str, brackets: &Vec<(usize, char)>, start_index: usize) 
         }
     }
 
-    if (start_index == 476) {
-        println!("Something's up");
-    }
-
     let mut sum = 0;
     let contains_red = non_array_strings.iter().any(|x| x.contains("red"));
-    if contains_red {
-        println!("red object");
-    }
-    else {
+    if !contains_red {
         for str in strings {
             sum += sum_all_numbers(str);
         }
-        println!("{} total found in object {} -> {}.", sum, start_index, end_index);
 
         let mut inner_end_index = start_index;
         loop {
