@@ -24,7 +24,7 @@ fn main() {
         reindeer_points.insert(String::from(reindeer.0), 0);
     }
 
-    for sec in 0..race_length {
+    for _sec in 0..race_length {
         // Move each reindeer forward by one second
         for reindeer in all_reindeer.iter_mut() {
             let distance = reindeer.1.step_one_sec();
@@ -48,6 +48,7 @@ fn main() {
     println!("winner is {}, who got {} points", winner.0, winner.1);
 }
 
+#[allow(dead_code)]
 fn run_timed_race(all_reindeer: &HashMap<String, (Reindeer, u16)>, race_length: u16) {
     let mut furthest = 0;
     
@@ -77,7 +78,6 @@ struct Reindeer {
 
 #[derive(Debug)]
 struct ReindeerErr {
-    msg: String
 }
 
 impl FromStr for Reindeer{
