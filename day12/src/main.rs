@@ -4,6 +4,7 @@ use fancy_regex::Regex;
 fn main() {
     let input = fs::read_to_string("./src/puzzle_input.txt").expect("Failed to read input");
     //println!("{:?}", input);
+    //let input = "{\"f\":5,\"d\":{\"d\":\"red\",\"e\":[1,2,3,4],\"f\":5},\"e\":{\"e\":[1,2,3,4],\"f\":5},\"h\":21}";
     println!("Input length: {}", input.len());
 
     // Part 1
@@ -60,7 +61,7 @@ fn parse_object(input: &str, brackets: &Vec<(usize, char)>, start_index: usize) 
                 // add string since previous array close to non-array-strings,
                 // only if we aren't currently in an array (array open greater 
                 // than array close)
-                if prev_array_close > prev_array_open && arr_depth == 0 { 
+                if arr_depth == 0 { 
                     let most_recent_bracket = max(prev_array_close, prev_bracket_close);
                     non_array_strings.push(&input[most_recent_bracket..bracket.0]);
                 }
@@ -91,6 +92,10 @@ fn parse_object(input: &str, brackets: &Vec<(usize, char)>, start_index: usize) 
             arr_depth -= 1;
             prev_array_close = bracket.0;
         }
+    }
+
+    if (start_index == 476) {
+        println!("Something's up");
     }
 
     let mut sum = 0;
