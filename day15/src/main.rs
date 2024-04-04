@@ -1,4 +1,4 @@
-use std::{fs, cmp::max, str::FromStr, collections::HashMap};
+use std::{fs, str::FromStr};
 
 fn main() {
     let input = fs::read_to_string("./src/puzzle_input.txt").expect("Failed to read input");
