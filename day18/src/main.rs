@@ -35,8 +35,7 @@ fn main() {
     // println!("Initial state: ");
     // print_lights(&lights);
 
-    let step_count = 4;
-    for i in 0..100 {
+    for _ in 0..100 {
         iterate_lights_one_step(&mut lights);
         // println!("After {} steps: ", i + 1);
         // print_lights(&lights);

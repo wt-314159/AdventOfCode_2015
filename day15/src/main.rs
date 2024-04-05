@@ -99,6 +99,7 @@ struct Ingredient {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct IngredientErr(String);
 
 impl FromStr for Ingredient {

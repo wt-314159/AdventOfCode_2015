@@ -49,6 +49,7 @@ struct Sue {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct ParseErr(String);
 
 impl Sue {
