@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"rust-analyzer.cargo.sysroot": "discover",
+		"rust-analyzer.showUnlinkedFileNotification": false
+	}
+}
