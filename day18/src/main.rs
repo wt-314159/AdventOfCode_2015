@@ -24,6 +24,12 @@ fn main() {
         }
     }
 
+    // Part 2, set corner lights on
+    lights[0][0] = State::On(None);
+    lights[0][SIZE - 1] = State::On(None);
+    lights[SIZE - 1][0] = State::On(None);
+    lights[SIZE - 1][SIZE - 1] = State::On(None);
+
     println!("Parsed lights initial stage");
 
     // println!("Initial state: ");
@@ -35,9 +41,9 @@ fn main() {
         // println!("After {} steps: ", i + 1);
         // print_lights(&lights);
     }
+
     println!("Final state: ");
     print_lights(&lights);
-
     println!("{} lights are on", count_on_lights(&lights));
 }
 
@@ -61,7 +67,9 @@ fn iterate_lights_one_step(lights: &mut [[State; SIZE]; SIZE]) {
             }
         }
         // get next state for edge lights
-        for y in 0..SIZE {
+        // Part 2, corner lights always on
+        // for Part 1, change '1..SIZE - 1' to '0..SIZE'
+        for y in 1..SIZE - 1 {
             edge_light_next_state(lights, y, 0);
             edge_light_next_state(lights, y, SIZE - 1);
         }
@@ -82,7 +90,8 @@ fn update_state(lights: &mut [[State; SIZE]; SIZE]) {
                 State::Off(Some(true)) => State::On(None),
                 State::On(Some(false)) => State::Off(None),
                 State::Off(Some(false)) => State::Off(None),
-                _ => panic!("Next state not set!")
+                State::On(None) => State::On(None),
+                State::Off(None) => State::Off(None)
             }
         }
     }
