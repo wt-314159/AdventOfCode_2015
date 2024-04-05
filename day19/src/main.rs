@@ -1,4 +1,5 @@
 use std::{fs, collections::HashMap};
+use regex::Regex;
 
 fn main() {
     let input = fs::read_to_string("./src/puzzle_input.txt").expect("Failed to read input");
