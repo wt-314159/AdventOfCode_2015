@@ -13,8 +13,8 @@ main() {
     // Part 1 answer: 831600
     
     // trying naive implementation
-    // Part 1
-    let house_num = step_by_step(1_000_000, TENTH_PRESENTS as usize);
+    // Part 2, for Part 1, pass 'TENTH_PRESENTS' as arg, rather than ELEVENTH
+    let house_num = step_by_step(1_000_000, ELEVENTH_PRESENTS as usize);
     if let Some(house) = house_num {
         println!("First house to pass is {}, with {} presents", house.0, house.1);
     }
@@ -169,7 +169,8 @@ fn num_presents_for_house(house_number: u32) -> u32 {
 fn step_by_step(max_house: usize, limit: usize) -> Option<(usize, usize)> {
     let mut houses: Vec<usize> = [0].repeat(max_house);
     for i in 1..houses.len() {
-        for house in (i-1..houses.len()).step_by(i) {
+        // For Part 1, remove '.take(50)'
+        for house in (i-1..houses.len()).step_by(i).take(50) {
             houses[house] += i;
         }
     }
