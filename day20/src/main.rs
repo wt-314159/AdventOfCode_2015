@@ -5,19 +5,20 @@ use std::{fs, collections::HashMap, cmp::min, cmp::max, ops::Range, time::Instan
 
 const PRESENTS: u32 = 36000000;
 const TENTH_PRESENTS: u32 = PRESENTS / 10;
+const ELEVENTH_PRESENTS: u32 = PRESENTS / 11;
 const PRIMES: [u32; 168] = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503, 509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 769, 773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997];
 
 fn 
 main() {
-    // found a few hits around 900_000 from previous iterations
-    // could also start at a lowish number and double each time, 
-    // and then use narrowing search over the last half
-    // lowest hit yet -> 856800
-    let mut house_num = 856800;
-    house_num = narrowing_search((house_num - 50_000)..house_num, 8192);
-
-    println!("First house to pass is {}", house_num)
-    //println!("First house to surpass present num is {}", house_num);
+    // Part 1 answer: 831600
+    
+    // trying naive implementation
+    // Part 1
+    let house_num = step_by_step(1_000_000, TENTH_PRESENTS as usize);
+    if let Some(house) = house_num {
+        println!("First house to pass is {}, with {} presents", house.0, house.1);
+    }
+    println!("No house found passing limit");
 }
 
 // lower the upper limit of a search and hopefully narrow in on the answer
@@ -155,4 +156,30 @@ fn num_presents_for_house(house_number: u32) -> u32 {
     }
     // multiply by 10 at end
     num_presents * 10
+}
+
+// Seems like a naive implementation, but actually orders of magnitude faster
+// Partly because addition is much quicker than division, but also because we 
+// don't repeat our work, if we try and find the factors for each number, we
+// have to divide by every number up to half of that number, and then for the
+// next number, we divide by all the same numbers but go one further.
+// In this method though, for each number we would otherwise divide by, we add
+// it's score to all the relevant houses in just one one pass, instead of many
+// passes of division.
+fn step_by_step(max_house: usize, limit: usize) -> Option<(usize, usize)> {
+    let mut houses: Vec<usize> = [0].repeat(max_house);
+    for i in 1..houses.len() {
+        for house in (i-1..houses.len()).step_by(i) {
+            houses[house] += i;
+        }
+    }
+    println!("All presents delivered to houses");
+    let house  = houses.iter().enumerate().find(|x| x.1 >= &limit);
+
+    if let Some((house_num, presents)) = house {
+        return Some((house_num + 1, *presents));    // indices are off by 1
+    }
+    else {
+        return None
+    }
 }
