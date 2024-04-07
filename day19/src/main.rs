@@ -1,8 +1,8 @@
-use std::{fs, collections::HashMap};
+use std::{fs, collections::HashMap, cmp::Reverse};
+use priority_queue::PriorityQueue;
+#[allow(unused_imports)]
 use regex::{Captures, Regex, RegexSet};
 use rand::{thread_rng, seq::SliceRandom};
-
-const U32_MAX: u32 = 4_294_967_295u32;
 
 fn main() {
     let input = fs::read_to_string("./src/puzzle_input.txt").expect("Failed to read input");
@@ -22,7 +22,6 @@ fn main() {
         products.push((Regex::new(params[2]).unwrap(), params[0]));
     }
     
-    let transforms: Vec<(Regex, &Vec<String>)> = replacements.iter().map(|(x, v)| (Regex::new(x).unwrap(), v)).collect();
     let med_molecule = lines.last().unwrap();
     println!("Parsing complete");
 
@@ -30,11 +29,11 @@ fn main() {
     //find_num_unique_molecules(med_molecule, replacements);
 
     // reverse sort by length of product
-    products.sort_by(|a, b| b.0.as_str().len().cmp(&a.0.as_str().len()));
-    println!("Products sorted");
+    // products.sort_by(|a, b| b.0.as_str().len().cmp(&a.0.as_str().len()));
+    // println!("Products sorted");
     
-    let steps = try_decompose_shuffle(med_molecule, &mut products);
-    println!("Found a solution in {} steps!", steps);
+    let num_steps = a_star_decompose(med_molecule, &mut products);
+    println!("Found solution requiring {} steps", num_steps);
 }
 
 #[allow(dead_code)]
@@ -48,57 +47,13 @@ fn find_num_unique_molecules(med_molecule: &str, replacements: HashMap<&str, Vec
     println!("{} unique new molecules found!", molecules.len()); 
 }
 
-fn get_all_molecules_from(
-    med_molecule: &str, 
-    mol_index: usize, 
-    regex_set: &RegexSet,
-    replacements: &Vec<(Regex, &Vec<String>)>, 
-    mut molecules: &mut Vec<String>, 
-    mut num_steps: u32) -> (u32, bool) {
-
-    let existing_mols_len = molecules.len();
-    let curr_mol = String::from(&molecules[mol_index]);
-    all_molecules_from_regex_set(&curr_mol, regex_set, replacements, &mut molecules);
-
-    num_steps += 1;
-    let mut found = false;
-    println!("{} unique molecules found in {} steps", molecules.len(), num_steps);
-
-    for i in existing_mols_len..molecules.len() {
-        let mol = &molecules[i];
-
-        if mol.len() >= med_molecule.len() {
-            if mol == med_molecule {
-                println!("We did it! Took {} steps", num_steps);
-                return (num_steps, true);
-            }
-            molecules.remove(i);
-            println!("Not a match");
-        }
-
-        (num_steps, found) = get_all_molecules_from(med_molecule, i, regex_set, replacements, molecules, num_steps);
-    }
-    (num_steps, found)
-}
-
-fn iterate_shuffle_decompose(med_molecule: &str, products: &mut Vec<(Regex, &str)>, iterations: u32) -> u32 {
-    let mut fewest_steps = 10000;   // some big number
-    for i in 0..iterations {
-        products.shuffle(&mut thread_rng());
-        let steps = try_decompose_shuffle(med_molecule, products);
-        if steps < fewest_steps {
-            fewest_steps = steps;
-        }
-        println!("Found solution in {} steps", steps);
-    }
-    fewest_steps
-}
-
 // credit to https://www.reddit.com/r/adventofcode/comments/3xflz8/day_19_solutions/cy4cu5b
 // Doesn't necessarily find the shortest number of steps however
+#[allow(dead_code)]
 fn try_decompose_shuffle(med_molecule: &str, products: &mut Vec<(Regex, &str)>) -> u32 {
     let mut target = String::from(med_molecule);
     let mut steps = 0;
+    let mut dead_ends = 0;
 
     while target != "e" {
         let tmp = String::from(&target);
@@ -110,113 +65,53 @@ fn try_decompose_shuffle(med_molecule: &str, products: &mut Vec<(Regex, &str)>) 
         }
 
         if tmp == target {
+            dead_ends += 1;
             target = String::from(med_molecule);
             steps = 0;
             products.shuffle(&mut thread_rng())
         }
     }
+    println!("{} dead ends explored", dead_ends);
     steps
 }
 
-fn try_decompose_all_ways(med_molecule: &str, products: &Vec<(Regex, &str)>, regex_set: &RegexSet, num_steps: u32, mut min_steps: u32) -> u32 {
-    let hits = regex_set.matches(&med_molecule);
-    for hit in hits {
-        let product = &products[hit];
+// Pretty basic / crude A* implementation, estimated cost function is very basic, but 
+// it's tricky to think of a good way to estimate the cost of a molecule when we're 
+// trying to decompose it that wouldn't take so long to run as to be counter-productive.
+// Seems like the key with this entire puzzle problem is to do depth first searches, but
+// when you run into a dead_end or don't have a match, start again from the beginning and
+// take a different path, rather than going back to the previous point on the dead end
+// path and looking for a different way
+fn a_star_decompose(med_molecule: &str, products: &mut Vec<(Regex, &str)>) -> usize {
+    let start_node = Node { molecule: String::from(med_molecule), num_steps: 0 };
+    let total_cost = start_node.estimate_cost();
 
-        for mat in product.0.find_iter(&med_molecule) {
-            let mut reduced_molecule = String::from(med_molecule);
-            reduced_molecule.replace_range(mat.range(), product.1);
-            let num_steps = num_steps + 1;
-            //print!(".");
-            if reduced_molecule == "e" {
-                println!("Molecule fully reduced in {} steps", num_steps);
-                if num_steps < min_steps {
-                    return num_steps;
-                }
-                return min_steps;
-            }
-            min_steps = try_decompose_all_ways(&reduced_molecule, products, regex_set, num_steps, min_steps);
+    let mut priority_queue = PriorityQueue::new();
+    priority_queue.push(start_node, Reverse(total_cost));
+
+    loop {
+        // pop the 'best' node from the queue
+        let node = priority_queue.pop().unwrap();
+        // If the node is "e", return num steps
+        if node.0.molecule == "e" {
+            return node.0.num_steps;
         }
-    }
-    min_steps
-}
-
-fn decompose_molecule(med_molecule: &str, products: &Vec<(Regex, &str)>, mut num_steps: u16) -> u16 {
-    let mut reduced_molecule = String::from(med_molecule);
-
-    while reduced_molecule != "e" {
-        // Find the longest product that has a match in the molecule
-        let longest_match = products.iter()
-            .find(|(x, _)| x.is_match(&reduced_molecule))
-            .expect(&format!("Dead end! Molecule currently: '{}'", reduced_molecule));
-        reduced_molecule = longest_match.0.replace_all(&reduced_molecule, |_: &Captures| {
-            num_steps += 1;
-            longest_match.1
-        }).to_string();
-    }
-    num_steps
-}
-
-fn decompose_molecule_old(med_molecule: &str, products: &Vec<(Regex, &str)>, mut num_steps: u16) -> u16 {
-    let mut reduced_molecule = String::from(med_molecule);
-    for prod in products {
-        let reg_string = prod.0.as_str();
-        if reduced_molecule == "e" {
-            return num_steps;
-        }
-
-        // Replace all occurrences of match, then check for more matches
-        // of same pattern that might now have emerged
-        if prod.0.is_match(&reduced_molecule) {
-            reduced_molecule = prod.0.replace_all(&reduced_molecule, |_: &Captures| {
-                num_steps += 1;
-                prod.1
-            }).to_string();
-            // Go one level deeper and start again from beginning of products vec,
-            // so we should always get the longest match
-            break;
-        }
-    }
-    num_steps = decompose_molecule_old(&reduced_molecule, products, num_steps);
-    num_steps
-}
-
-fn all_molecules_from_regex_set(molecule: &str, regex_set: &RegexSet, replacements: &Vec<(Regex, &Vec<String>)>, molecules: &mut Vec<String>) {
-    let hits = regex_set.matches(&molecule);
-    for hit in hits {
-        let product = &replacements[hit];
-
-        for mat in product.0.find_iter(&molecule) {
-            for replacement in product.1 {
-                let range = mat.range();
-                let mut new_molecule = String::from(molecule);
-                new_molecule.replace_range(range, &replacement);
-
-                if !molecules.contains(&new_molecule) {
-                    molecules.push(new_molecule);
-                }
+        // go through every match, replace and and new node
+        for prod in &mut *products {
+            if prod.0.is_match(&node.0.molecule) {
+                let new = prod.0.replace(&node.0.molecule, prod.1).to_string();
+                let new_node = Node { molecule: new, num_steps: node.0.num_steps + 1 };
+                let est_cost = new_node.estimate_cost();
+                priority_queue.push(new_node, Reverse(est_cost));
             }
         }
+        // Could maybe make this more efficient by tracking the parent node for each node,
+        // and if no matches were found for a given node, updating the estimated cost of it's
+        // parent node to deprioritise it slightly, so if a node leads to several dead ends we 
+        // start looking at other nodes
     }
 }
 
-fn all_molecules_from_regex(molecule: &str, mol_regex: &(Regex, &Vec<String>), molecules: &mut Vec<String>) {
-    // testing if match should be cheaper than find_iter
-    if !mol_regex.0.is_match(molecule) {
-        return;
-    }
-    for hit in mol_regex.0.find_iter(molecule) {
-        for replacement in mol_regex.1 {
-            let range = hit.range();
-            let mut new_molecule = String::from(molecule);
-            new_molecule.replace_range(range, &replacement);
-
-            if !molecules.contains(&new_molecule) {
-                molecules.push(new_molecule);
-            }
-        }
-    }
-}
 
 fn all_molecules_from_replacement(med_molecule: &str, mol_replacements: (&str, Vec<String>), molecules: &mut Vec<String>) {
     let regex = Regex::new(mol_replacements.0).unwrap();
@@ -231,5 +126,26 @@ fn all_molecules_from_replacement(med_molecule: &str, mol_replacements: (&str, V
                 molecules.push(new_molecule);
             }
         }
+    }
+}
+
+#[derive(Hash)]
+#[derive(PartialEq, Eq)]
+struct Node {
+    molecule: String,
+    num_steps: usize,
+}
+
+impl Node {
+    fn estimate_cost(&self) -> usize {
+        self.num_steps + self.estimate_distance()
+    }
+
+    fn estimate_distance(&self) -> usize {
+        // very basic heuristic, assume each transformation reduces 
+        // length by about 3, so number of transformations still 
+        // required is difference between molecule length and target
+        // length (which is 1) divided by 3
+        (self.molecule.len() - 1) / 3
     }
 }
