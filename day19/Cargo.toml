@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 regex = "1.10.4"
+priority-queue = "2.0.2"
+rand = "0.8.5"

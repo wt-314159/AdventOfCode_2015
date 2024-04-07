@@ -1,5 +1,6 @@
 use std::{fs, collections::HashMap};
 use regex::{Captures, Regex, RegexSet};
+use rand::{thread_rng, seq::SliceRandom};
 
 const U32_MAX: u32 = 4_294_967_295u32;
 
@@ -31,19 +32,9 @@ fn main() {
     // reverse sort by length of product
     products.sort_by(|a, b| b.0.as_str().len().cmp(&a.0.as_str().len()));
     println!("Products sorted");
-
-    // Go through the products from longest to shortest and find every match, replacing iteratively,
-    // until hopefully we've decomposed it down to just 'e'
-    //let num_steps = decompose_molecule(med_molecule, &products, 0);
-
-    let regex_set = &RegexSet::new(products.iter().map(|(x, _)| x.as_str())).unwrap();
-    //let regex_set = RegexSet::new(transforms.iter().map(|x| x.0.as_str())).unwrap();
-
-    let num_steps = try_decompose_all_ways(med_molecule, &products, regex_set, 0, U32_MAX);
-
-    //let mut molecules: Vec<String> = vec![String::from("e")];
-    //let num_steps = get_all_molecules_from(&med_molecule, 0, &regex_set, &transforms, &mut molecules, 0).0;
-    println!("Have reduced molecule in {} steps!", num_steps);
+    
+    let steps = try_decompose_shuffle(med_molecule, &mut products);
+    println!("Found a solution in {} steps!", steps);
 }
 
 #[allow(dead_code)]
@@ -88,6 +79,43 @@ fn get_all_molecules_from(
         (num_steps, found) = get_all_molecules_from(med_molecule, i, regex_set, replacements, molecules, num_steps);
     }
     (num_steps, found)
+}
+
+fn iterate_shuffle_decompose(med_molecule: &str, products: &mut Vec<(Regex, &str)>, iterations: u32) -> u32 {
+    let mut fewest_steps = 10000;   // some big number
+    for i in 0..iterations {
+        products.shuffle(&mut thread_rng());
+        let steps = try_decompose_shuffle(med_molecule, products);
+        if steps < fewest_steps {
+            fewest_steps = steps;
+        }
+        println!("Found solution in {} steps", steps);
+    }
+    fewest_steps
+}
+
+// credit to https://www.reddit.com/r/adventofcode/comments/3xflz8/day_19_solutions/cy4cu5b
+// Doesn't necessarily find the shortest number of steps however
+fn try_decompose_shuffle(med_molecule: &str, products: &mut Vec<(Regex, &str)>) -> u32 {
+    let mut target = String::from(med_molecule);
+    let mut steps = 0;
+
+    while target != "e" {
+        let tmp = String::from(&target);
+        for rep in &mut *products {
+            if rep.0.is_match(&target) {
+                target = rep.0.replace(&target, rep.1).to_string();
+                steps += 1;
+            }
+        }
+
+        if tmp == target {
+            target = String::from(med_molecule);
+            steps = 0;
+            products.shuffle(&mut thread_rng())
+        }
+    }
+    steps
 }
 
 fn try_decompose_all_ways(med_molecule: &str, products: &Vec<(Regex, &str)>, regex_set: &RegexSet, num_steps: u32, mut min_steps: u32) -> u32 {
