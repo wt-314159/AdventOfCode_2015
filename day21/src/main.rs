@@ -43,7 +43,7 @@ fn main() {
     // or 2 rings (5 + 4 + 3 + 2 + 1 options)
     let mut ring_options = rings.len();
     for i in 0..rings.len() - 1 {
-        for j in i+1..rings.len() - 1 {
+        for _ in i+1..rings.len() - 1 {
             ring_options += 1;
         }
 
@@ -174,10 +174,6 @@ fn find_best_cost<F, G>(
         me.remove_item(weapon);
     }
 
-    me.clear_items();
-    total_cost = 0;
-
-
     best_cost
 }
 
@@ -279,6 +275,7 @@ impl<'a> Entity<'a> {
         }
     }
 
+    #[allow(dead_code)]
     fn clear_items(&mut self) {
         self.items = Vec::new();
     }
