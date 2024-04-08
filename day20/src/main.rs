@@ -4,8 +4,10 @@ use std::{fs, collections::HashMap, cmp::min, cmp::max, ops::Range, time::Instan
 // use regex::Regex;
 
 const PRESENTS: u32 = 36000000;
+#[allow(dead_code)]
 const TENTH_PRESENTS: u32 = PRESENTS / 10;
 const ELEVENTH_PRESENTS: u32 = PRESENTS / 11;
+#[allow(dead_code)]
 const PRIMES: [u32; 168] = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503, 509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 769, 773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997];
 
 fn 
@@ -21,6 +23,7 @@ main() {
 }
 
 // lower the upper limit of a search and hopefully narrow in on the answer
+#[allow(dead_code)]
 fn narrowing_search(range: Range<u32>, increment: u32) -> u32 {
     println!("Searching range {} - {}, increment: {}", range.start, range.end, increment);
     let mut house_num = range.start;
@@ -53,6 +56,8 @@ fn narrowing_search(range: Range<u32>, increment: u32) -> u32 {
     return narrowing_search(range, increment / 2);
 }
 
+
+#[allow(dead_code)]
 fn binary_search(range: Range<u32>) -> u32 {
     let range_length = range.end - range.start;
     if range_length == 1 {
@@ -79,7 +84,7 @@ fn is_enough_presents(house_number: u32) -> bool {
     // reduce the number of checks we need to do before
     // returning true (if total number of presents is greater
     // than PRESENTS)
-    for i in (2..=half_house_num) {
+    for i in 2..=half_house_num {
         if house_number % i == 0 {
             num_presents += i;
         }
@@ -94,6 +99,8 @@ fn is_enough_presents(house_number: u32) -> bool {
 // the memory allocation we're doing in the implementation, and the checks
 // to ensure we don't duplicate any factors
 // should only have to check if house-number is divisible by prime numbers
+
+#[allow(dead_code)]
 fn presents_from_primes(house_number: u32) -> u32 {
     // Find all prime factors
     let prime_factors = find_prime_factors(house_number);
@@ -143,6 +150,8 @@ fn factors_from_prime_factors(prime_factors: Vec<u32>) -> Vec<u32> {
     all_factors
 }
 
+
+#[allow(dead_code)]
 fn num_presents_for_house(house_number: u32) -> u32 {
     let half_house_num = house_number / 2;
     // Always divisible by 1 and itself
