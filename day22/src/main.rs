@@ -43,7 +43,7 @@ fn minimum_mana_win(
     
     // apply effects at start of turn
     for effect in &mut *effects {
-
+        
     }
     
     // Get spell that's within our mana budget
