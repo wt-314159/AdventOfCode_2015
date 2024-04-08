@@ -18,7 +18,6 @@ main() {
     if let Some(house) = house_num {
         println!("First house to pass is {}, with {} presents", house.0, house.1);
     }
-    println!("No house found passing limit");
 }
 
 // lower the upper limit of a search and hopefully narrow in on the answer
