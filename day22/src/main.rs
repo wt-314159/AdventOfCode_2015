@@ -38,24 +38,64 @@ fn minimum_mana_win(
     spells: &Vec<Spell>, 
     me: &mut Entity, 
     boss: &mut Entity, 
-    least_mana: usize, 
-    effects: &mut Vec<(usize, i32)>) -> usize {
+    mut least_mana: usize, 
+    mana_used: usize,
+    effects: &mut Vec<(usize, usize)>) -> usize {
     
     // apply effects at start of turn
-    for effect in &mut *effects {
-        
+    apply_effects(spells, me, boss, effects);
+    if boss.hit_points <= 0 && mana_used < least_mana {
+        least_mana = mana_used;
+        return least_mana;
     }
     
+    let my_mana = me.mana;
     // Get spell that's within our mana budget
     for (i, spell) in spells.iter().enumerate()
-    .filter(|x| x.1.mana_cost <= me.mana) {
+    .filter(|x| x.1.mana_cost <= my_mana) {
         // Check effect isn't already applied
         if spell.duration != None && effects.iter().any(|x| x.0 == i) {
             continue;
         }
+
+        me.mana -= spell.mana_cost;
+        if spell.duration != None {
+            effects.push((i, spell.duration.unwrap()));
+        }
+        else {
+            (spell.action)(me, boss, 0);
+        }
+
     }
     least_mana
 }
+
+fn apply_effects(
+    spells: &Vec<Spell>, 
+    me: &mut Entity, 
+    boss: &mut Entity, 
+    effects: &mut Vec<(usize, usize)>) {
+
+        let mut to_remove = Vec::new();
+        for (i, effect) in effects.iter().enumerate() {
+            let (spell_index, timer) = (effect.0, effect.1);
+            let effect_spell = &spells[spell_index];
+            (effect_spell.action)(me, boss, timer);
+            if timer == 0 {
+                to_remove.push(i);
+            }
+            else {
+                let mut deref = *effect;
+                deref.1 -= 1;
+            }
+        }
+        // sort in descending order of index, as removing later indices doesn't affect
+        // earlier indices, but removing early indices affects later indices
+        to_remove.sort_by(|a, b| b.cmp(a));
+        for i in to_remove {
+            effects.remove(i);
+        }
+    }
 
 struct Entity {
     hit_points: i32,
