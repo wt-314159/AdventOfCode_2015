@@ -19,13 +19,11 @@ fn main() {
 
     // time finding the first 1000 numbers 
     // 1000 numbers took 18.8 microseconds
-    let start = Instant::now();
     let mut curr_code = START_CODE;
-    for i in 1..1000 {
+    for _ in 1..=code_index {
         curr_code = find_next_value(curr_code);
     }
-    let elapsed = start.elapsed();
-    println!("Found 1000th code ({}) in {:.2?}", curr_code, elapsed);
+    println!("Found code: {}", curr_code);
 }
 
 fn find_next_value(prev_value: usize) -> usize {
